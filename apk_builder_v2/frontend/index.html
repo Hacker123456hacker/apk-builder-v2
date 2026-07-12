@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI APK Builder</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div id="view-login" class="view">
+    <div class="login-wrap">
+      <div class="brand">
+        <div class="brand-icon">🤖</div>
+        <h1>AI APK Builder</h1>
+        <p class="muted">Auto-fix + Cloud build via GitHub Actions</p>
+      </div>
+      <h2>Connect GitHub</h2>
+      <p class="muted small">Paste a Personal Access Token. Required scopes: <code>repo</code> + <code>workflow</code>.</p>
+      <div class="field">
+        <label>Personal Access Token</label>
+        <div class="input-with-icon">
+          <input type="password" id="pat-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+          <button type="button" id="toggle-pat" class="icon-btn">👁</button>
+        </div>
+      </div>
+      <div id="login-error" class="error-box hidden"></div>
+      <button id="connect-btn" class="btn-primary">Connect</button>
+      <a href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=AI+APK+Builder" target="_blank" class="btn-outline">Generate token on GitHub ↗</a>
+      <div class="info-box">
+        <strong>Required scopes</strong>
+        <div class="scope-row"><code>repo</code><span>Create repositories and push code</span></div>
+        <div class="scope-row"><code>workflow</code><span>Trigger GitHub Actions workflows</span></div>
+        <p class="muted tiny">Token is encrypted at rest and only sent to api.github.com.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div id="view-app" class="view hidden">
+    <header class="topbar">
+      <div class="topbar-title"><span>🤖</span> AI APK Builder</div>
+      <div id="topbar-user" class="topbar-user"></div>
+    </header>
+    <nav class="tabbar">
+      <button class="tab-btn active" data-tab="build">🚀 Build</button>
+      <button class="tab-btn" data-tab="history">🕑 History</button>
+      <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+    </nav>
+
+    <!-- BUILD TAB -->
+    <section id="tab-build" class="tab-content active">
+
+      <!-- Upload stage -->
+      <div id="upload-stage" class="stage">
+        <div id="dropzone" class="dropzone">
+          <div class="dropzone-icon">⬆️</div>
+          <div id="dropzone-text" class="dropzone-text">Click or drag project ZIP here</div>
+          <div class="muted small">Flutter · Android Studio · React Native</div>
+          <input type="file" id="file-input" accept=".zip" hidden>
+        </div>
+
+        <div id="analyzing-indicator" class="hidden center-col">
+          <div class="spinner"></div>
+          <p class="muted" id="analyzing-label">Analyzing project...</p>
+        </div>
+
+        <div id="validation-card" class="card hidden"></div>
+
+        <!-- Fix panel (shown after validation) -->
+        <div id="fix-panel" class="card hidden">
+          <div class="fix-panel-header">
+            <div>
+              <div class="fix-panel-title">🔧 Auto-Fix Engine</div>
+              <div class="muted small" id="fix-summary-text">Click to detect and fix issues before building</div>
+            </div>
+            <button id="run-fix-btn" class="btn-fix">Run Fixes</button>
+          </div>
+          <div id="fix-results-list" class="fix-results-list hidden"></div>
+          <div id="fix-download-row" class="hidden" style="margin-top:12px;">
+            <button id="download-fixed-zip-btn" class="btn-outline-small">⬇ Download Fixed ZIP</button>
+            <span class="muted tiny" style="margin-left:8px;">Apply fixes locally before building</span>
+          </div>
+        </div>
+
+        <div id="repo-name-field" class="field hidden">
+          <label>GitHub repository name</label>
+          <input type="text" id="repo-name-input" placeholder="my-app">
+          <div class="visibility-note">
+            <span class="visibility-dot"></span>
+            Repo will be <strong>Public</strong> — unlimited free build minutes. Source code will be visible on GitHub.
+          </div>
+        </div>
+
+        <div id="build-type-selector" class="build-type-row hidden">
+          <button class="type-chip active" data-type="apk"><strong>APK</strong><span>Direct install</span></button>
+          <button class="type-chip" data-type="aab"><strong>AAB</strong><span>Play Store</span></button>
+        </div>
+
+        <button id="start-build-btn" class="btn-primary hidden">🚀 Start Cloud Build</button>
+      </div>
+
+      <!-- Monitor stage -->
+      <div id="monitor-stage" class="stage hidden">
+
+        <!-- Phase stepper -->
+        <div class="phase-stepper card">
+          <div class="phase-step" id="phase-fixing"><span class="phase-dot"></span><span>Auto-Fix</span></div>
+          <div class="phase-arrow">→</div>
+          <div class="phase-step" id="phase-uploading"><span class="phase-dot"></span><span>Upload</span></div>
+          <div class="phase-arrow">→</div>
+          <div class="phase-step" id="phase-building"><span class="phase-dot"></span><span>Build</span></div>
+          <div class="phase-arrow">→</div>
+          <div class="phase-step" id="phase-done"><span class="phase-dot"></span><span>Done</span></div>
+        </div>
+
+        <div class="card monitor-header">
+          <div class="status-row">
+            <span id="status-dot" class="status-dot"></span>
+            <span id="status-label" class="status-label">Starting...</span>
+            <span id="status-spinner" class="spinner small hidden"></span>
+          </div>
+          <div id="monitor-repo" class="muted small mono"></div>
+          <div id="upload-progress-wrap" class="hidden">
+            <div class="progress-track"><div id="upload-progress-bar" class="progress-fill"></div></div>
+            <div id="upload-progress-label" class="muted tiny"></div>
+          </div>
+        </div>
+
+        <!-- Fix summary in monitor -->
+        <div id="monitor-fix-summary" class="card hidden">
+          <div class="fix-summary-row">
+            <span class="fix-badge" id="fix-badge-found"></span>
+            <span class="fix-badge green" id="fix-badge-fixed"></span>
+          </div>
+          <div id="monitor-fix-list" class="fix-results-list"></div>
+        </div>
+
+        <div id="steps-list" class="steps-list"></div>
+
+        <div class="logs-panel">
+          <div class="logs-toolbar">
+            <span class="muted tiny">Build Log</span>
+            <button id="clear-logs-btn" class="btn-text-small">Clear</button>
+          </div>
+          <div id="logs-content" class="logs-content"></div>
+        </div>
+
+        <!-- AI Analysis panel (shown on failure) -->
+        <div id="ai-panel" class="card hidden">
+          <div class="ai-header">🤖 AI Error Analysis</div>
+          <div id="ai-summary" class="ai-summary"></div>
+          <div id="ai-suggestions" class="ai-suggestions"></div>
+        </div>
+
+        <div id="monitor-actions" class="monitor-actions"></div>
+        <button id="new-build-btn" class="btn-outline">+ New Build</button>
+      </div>
+    </section>
+
+    <!-- HISTORY TAB -->
+    <section id="tab-history" class="tab-content">
+      <div class="history-header">
+        <h2>Build History</h2>
+        <button id="clear-history-btn" class="btn-text-danger">Clear all</button>
+      </div>
+      <div id="history-list"></div>
+      <div id="history-empty" class="empty-state hidden"><div class="empty-icon">🕑</div><p class="muted">No builds yet</p></div>
+    </section>
+
+    <!-- SETTINGS TAB -->
+    <section id="tab-settings" class="tab-content">
+      <div id="settings-account" class="card"></div>
+      <h3 class="section-label">ACCOUNT</h3>
+      <button id="view-profile-btn" class="settings-tile"><span>↗</span> View GitHub Profile</button>
+      <button id="logout-btn" class="settings-tile danger"><span>⎋</span> Disconnect GitHub</button>
+      <h3 class="section-label">AUTO-FIX ENGINE</h3>
+      <div class="card">
+        <strong>What gets fixed automatically</strong>
+        <div class="fix-category-list">
+          <div class="fix-cat-row"><span class="fix-cat-badge">Gradle</span><span class="muted small">JVM args, wrapper version, AGP, namespace</span></div>
+          <div class="fix-cat-row"><span class="fix-cat-badge">Flutter</span><span class="muted small">SDK constraints, Kotlin version, missing android/</span></div>
+          <div class="fix-cat-row"><span class="fix-cat-badge">Android</span><span class="muted small">Manifest permissions, exported attribute, labels</span></div>
+          <div class="fix-cat-row"><span class="fix-cat-badge">Hive</span><span class="muted small">Missing build_runner, adapter generation</span></div>
+          <div class="fix-cat-row"><span class="fix-cat-badge">Workflow</span><span class="muted small">Injects corrected GitHub Actions YAML</span></div>
+        </div>
+      </div>
+      <h3 class="section-label">ABOUT</h3>
+      <div class="card">
+        <strong>AI APK Builder v2</strong>
+        <p class="muted small">Builds run on GitHub Actions — nothing compiled locally. Auto-Fix Engine patches common errors before each build.</p>
+        <p class="muted tiny">Version 2.0.0</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="confirm-dialog" class="dialog-overlay hidden">
+    <div class="dialog">
+      <h3 id="confirm-title"></h3>
+      <p id="confirm-body" class="muted small"></p>
+      <div class="dialog-actions">
+        <button id="confirm-cancel" class="btn-text">Cancel</button>
+        <button id="confirm-ok" class="btn-text-danger"></button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden"></div>
+</div>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
