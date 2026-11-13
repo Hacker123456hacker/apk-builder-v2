@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-.env
-backend/data/
-*.zip
-.DS_Store
-node_modules/
