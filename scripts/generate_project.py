@@ -14,7 +14,7 @@ title=issue.get("title") or "New project"
 key=os.environ.get("GEMINI_API_KEY")
 if not key: fail("Missing GEMINI_API_KEY repository secret.")
 target="Both Android APK and website"
-match=re.search(r"## Main output\s*\n([^\n]+)", body, re.I)
+match=re.search(r"#{2,3}\s*Main output\s*\n([^\n]+)", body, re.I)
 if match: target=match.group(1).strip()
 prompt="""You are a senior engineer. Return ONLY valid JSON shaped exactly as {"files":{"relative/path":"complete file contents"}}.
 Create a complete, reviewable software project for the user's idea.
