@@ -1,7 +1,6 @@
 name: Build an app or website idea
 description: Submit an idea for an AI-generated draft
 title: "Build idea: "
-labels: ["build-idea"]
 body:
   - type: markdown
     attributes:
