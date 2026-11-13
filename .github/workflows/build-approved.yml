@@ -1,0 +1,65 @@
+name: Build approved project
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+  deployments: write
+concurrency:
+  group: approved-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  build-android:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK if Android project exists
+        shell: bash
+        run: |
+          if [ -d generated/android ]; then
+            cd generated/android
+            gradle --no-daemon assembleDebug
+            mkdir -p ../../dist
+            cp app/build/outputs/apk/debug/app-debug.apk ../../dist/IdeaForge-debug.apk
+          else
+            echo "No Android project in this approved draft."
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: IdeaForge-Android-APK
+          path: dist/*.apk
+          if-no-files-found: ignore
+          retention-days: 30
+  deploy-website:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Check for website
+        id: site
+        run: |
+          if [ -d generated/web ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/configure-pages@v5
+        if: steps.site.outputs.exists == 'true'
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.site.outputs.exists == 'true'
+        with:
+          path: generated/web
+      - uses: actions/deploy-pages@v4
+        if: steps.site.outputs.exists == 'true'

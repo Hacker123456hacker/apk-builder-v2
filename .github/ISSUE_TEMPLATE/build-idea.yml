@@ -1,15 +1,15 @@
 name: Build an app or website idea
-description: Submit an idea for an AI-generated draft
+description: Submit an idea for an AI-generated project draft
 title: "Build idea: "
 body:
   - type: markdown
     attributes:
-      value: "Your idea will be reviewed and turned into a draft. No build or publishing happens until you approve it."
+      value: "The AI creates a draft pull request. Nothing is built or published until you review and merge it."
   - type: textarea
     id: idea
     attributes:
       label: What should be built?
-      description: Describe screens, features, design, and how it should work.
+      description: Describe screens, features, design, and expected behavior.
       placeholder: "I want an app that..."
     validations:
       required: true
@@ -23,10 +23,3 @@ body:
         - Both Android APK and website
     validations:
       required: true
-  - type: checkboxes
-    id: review
-    attributes:
-      label: Review
-      options:
-        - label: I want to review the generated code before any build or publishing.
-          required: true

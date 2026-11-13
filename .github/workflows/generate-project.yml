@@ -1,0 +1,31 @@
+name: Generate project draft
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+concurrency:
+  group: idea-generation-${{ github.event.issue.number }}
+  cancel-in-progress: false
+jobs:
+  generate:
+    if: github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate and open review pull request
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ISSUE_JSON: ${{ toJson(github.event.issue) }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/generate_project.py

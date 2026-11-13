@@ -1,26 +1,30 @@
-# IdeaForge
+# IdeaForge — AI idea-to-app builder
 
-IdeaForge is a GitHub-native idea-to-app starter. It is designed to run without a separately managed backend, VPS, Railway service, or Termux process.
+A GitHub-native AI project generator. No Railway, VPS, always-on server, or Termux process is required.
 
-## Product flow
-
-1. Submit an app or website idea from the GitHub Pages interface.
-2. The idea is recorded as a GitHub Issue.
-3. AI prepares a draft project for review.
-4. You approve the draft before build or publishing workflows run.
-5. GitHub Actions builds Android artifacts; GitHub Pages can publish static websites.
-
-## Current status
-
-This is the clean foundation and intake interface. The AI generation, review/approval, Flutter APK build, and website deployment workflows are the next implementation stages. They are not yet active.
+## Flow
+1. Submit an idea on the Pages website.
+2. GitHub opens an Issue.
+3. Owner-only Actions workflow asks Gemini to create a project draft.
+4. Actions opens a pull request for code review.
+5. Review the source and merge only when satisfied.
+6. Merge triggers Android APK build and/or GitHub Pages website deployment.
 
 ## One-time setup
+1. Repository Settings → Secrets and variables → Actions → New repository secret: **GEMINI_API_KEY**.
+2. Repository Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+3. Repository Settings → Actions → General → enable Actions and allow required workflow permissions.
+4. Submit an idea while signed in as the repository owner.
 
-- Enable GitHub Pages for the repository, deploying from the `main` branch root.
-- Enable GitHub Actions.
-- Add the required AI provider key as a repository Actions secret when the generation workflow is installed. Never put API keys in frontend files.
-- Keep idea-generation workflows restricted to trusted repository collaborators. Issue text is untrusted input and must never be treated as workflow instructions.
+## Security
+- AI generation runs only for Issues opened by the repository owner.
+- API key is read only from Actions secrets; it is never sent to the browser.
+- AI-generated files are restricted to generated/android and generated/web.
+- No build or deployment runs until the owner merges the draft PR.
+- Review generated code before merging. AI-generated code can contain bugs.
 
-## Free-tier note
+## APK download
+After merging, open Actions → Build approved project → completed run → Artifacts → IdeaForge-Android-APK. Artifact retention and Actions usage are subject to GitHub plan limits.
 
-GitHub Actions and AI providers have usage limits and may change their free allowances. APK builds run on GitHub-hosted runners; no server needs to be kept running by you.
+## Notes
+Gemini model availability and quotas, GitHub Actions minutes, and free-tier policies can change. The first generated Android project should be treated as a test build; inspect logs if Gradle reports a dependency or SDK issue.
