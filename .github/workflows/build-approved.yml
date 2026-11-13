@@ -1,7 +1,6 @@
 name: Build approved project
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 permissions:
   contents: read
@@ -10,11 +9,10 @@ permissions:
   id-token: write
   deployments: write
 concurrency:
-  group: approved-build-${{ github.event.pull_request.number }}
+  group: ideaforge-main-build
   cancel-in-progress: true
 jobs:
   build-android:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +23,11 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
       - name: Build debug APK if Android project exists
         shell: bash
         run: |
@@ -35,7 +37,7 @@ jobs:
             mkdir -p ../../dist
             cp app/build/outputs/apk/debug/app-debug.apk ../../dist/IdeaForge-debug.apk
           else
-            echo "No Android project in this approved draft."
+            echo "No Android project has been approved yet."
           fi
       - uses: actions/upload-artifact@v4
         if: always()
@@ -44,22 +46,28 @@ jobs:
           path: dist/*.apk
           if-no-files-found: ignore
           retention-days: 30
-  deploy-website:
-    if: github.event.pull_request.merged == true
+  deploy-pages:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Check for website
-        id: site
+      - name: Assemble Pages site
         run: |
-          if [ -d generated/web ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+          mkdir -p public/assets
+          cp index.html public/index.html
+          cp -R assets/. public/assets/
+          if [ -d generated/web ]; then
+            mkdir -p public/project
+            cp -R generated/web/. public/project/
+          fi
       - uses: actions/configure-pages@v5
-        if: steps.site.outputs.exists == 'true'
       - uses: actions/upload-pages-artifact@v3
-        if: steps.site.outputs.exists == 'true'
         with:
-          path: generated/web
-      - uses: actions/deploy-pages@v4
-        if: steps.site.outputs.exists == 'true'
+          path: public
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
