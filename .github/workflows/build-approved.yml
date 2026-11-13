@@ -5,19 +5,19 @@ on:
 permissions:
   contents: read
   actions: read
-  pages: write
-  id-token: write
-  deployments: write
 concurrency:
   group: ideaforge-main-build
   cancel-in-progress: true
 jobs:
   build-android:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+          persist-credentials: false
       - uses: actions/setup-java@v4
         if: hashFiles('generated/android/**') != ''
         with:
@@ -54,6 +54,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
   deploy-pages:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      deployments: write
     runs-on: ubuntu-latest
     environment:
       name: github-pages
