@@ -1,4 +1,4 @@
-import json, os, re, subprocess, sys
+import json, os, re, subprocess, sys, urllib.request
 from pathlib import Path
 
 def fail(message):
