@@ -13,26 +13,29 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-android:
-    if: hashFiles('generated/android/**') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
       - uses: actions/setup-java@v4
+        if: hashFiles('generated/android/**') != ''
         with:
           distribution: temurin
           java-version: "17"
       - name: Accept Android SDK licenses and install packages
+        if: hashFiles('generated/android/**') != ''
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           yes | "$SDKMANAGER" --licenses >/dev/null
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
       - uses: gradle/actions/setup-gradle@v4
+        if: hashFiles('generated/android/**') != ''
         with:
           gradle-version: "8.9"
       - name: Build debug APK if Android project exists
+        if: hashFiles('generated/android/**') != ''
         shell: bash
         run: |
           if [ -d generated/android ]; then
@@ -44,7 +47,7 @@ jobs:
             echo "No Android project has been approved yet."
           fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: hashFiles('generated/android/**') != ''
         with:
           name: IdeaForge-Android-APK
           path: dist/*.apk
